@@ -1,0 +1,41 @@
+{
+  "name": "version-repo-node",
+  "version": "1.0.0",
+  "description": "A set of versioned data-stores ",
+  "main": "index.js",
+  "scripts": {
+    "test": "(NODE_ENV=test-file mocha test/remote-repo-router-tests.js && mocha test/remote-repo-tests.js && mocha test/version-resolution-test.js)",
+    "start": "node ./src/app.js",
+    "build": "((tsc  && mocha) || true)",
+    "debug": "echo \"Error: no debug script specified\" && exit 1"
+  },
+  "keywords": [
+    "version",
+    "semver",
+    "remote",
+    "repository",
+    "data",
+    "store"
+  ],
+  "author": "Jason Thorpe",
+  "license": "MIT",
+  "devDependencies": {
+    "body-parser": "^1.15.2",
+    "chai": "^3.5.0",
+    "chai-as-promised": "^5.3.0",
+    "chai-http": "^3.0.0",
+    "object-sizeof": "^1.0.10",
+    "mocha": "^3.0.2",
+    "multer": "^1.2.0",
+    "temp": "^0.8.3",
+    "q": "^1.4.1"
+  },
+  "dependencies": {
+    "bluebird": "^3.4.7",
+    "express": "^4.14.0",
+    "semver": "^5.3.0",
+	"superagent": ">=1.x",
+    "superagent-bluebird-promise": "^4.1.0",
+    "version-repo": "^1.1.0"
+  }
+}
