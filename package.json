@@ -19,6 +19,10 @@
   ],
   "author": "Jason Thorpe",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jdthorpe/version-repo-node.git"
+  },
   "devDependencies": {
     "body-parser": "^1.15.2",
     "chai": "^3.5.0",
@@ -35,7 +39,9 @@
     "express": "^4.14.0",
     "semver": "^5.3.0",
 	"superagent": ">=1.x",
-    "superagent-bluebird-promise": "^4.1.0",
-    "version-repo": "^1.0.0"
+    "superagent-bluebird-promise": "^4.1.0"
+  },
+  "peerDependencies": {
+    "version-repo": "^1.0.1"
   }
 }
