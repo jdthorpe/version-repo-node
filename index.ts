@@ -2,7 +2,6 @@
 export { 
     MemoryRepo,
     ReadonlyBuffer,
-    ProcessedBuffer,
     calculate_dependencies,
     dTransform, 
     sTransform,} from 'version-repo/index';

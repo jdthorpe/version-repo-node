@@ -1,23 +1,39 @@
 
-import {file_repo_config, deferred_repository, package_loc, resource_data} from "version-repo/src/typings"
+import {
+    file_repo_config,
+    deferred_repository,
+    package_loc,
+    fetch_opts,
+    resource_data,
+    bare_deferred_readable_repository} from "version-repo/src/typings"
 
-import fs = require('fs');
+
+import {calculate_dependencies, isPackageLoc, validate_options} from "version-repo"
+import { mkdir, writeFile, readFile, readdir, stat, PathLike, access, existsSync, unlink, Stats} from "fs"
 import path = require('path');
 import semver = require('semver');
+import mkdirp = require('mkdirp');
 import * as Promise from "bluebird";
 
 
-//-- const readFile = Promise.promisify(fs.readFile);
-const mkdir = Promise.promisify(fs.mkdir);
-const writeFile = Promise.promisify(fs.writeFile);
-const readDir = Promise.promisify(fs.readdir);
-const stat = Promise.promisify(fs.stat);
+const _mkdirp = Promise.promisify(mkdirp);
+
+const _readFile:((path: PathLike | number, options: { encoding?: string | null; flag?: string; } | string | undefined | null) =>  Promise<string | Buffer>) = 
+        Promise.promisify(readFile);
+const _writeFile:((path: PathLike | number, data: any, options: { encoding?: string | null; mode?: number | string; flag?: string; } | string | undefined | null) =>  Promise<void> )
+        = Promise.promisify(writeFile);
+const _unlink = Promise.promisify(unlink);
+const _mkdir = Promise.promisify(mkdir);
+const _readDir = Promise.promisify(readdir);
+const _stat = Promise.promisify(stat);
+const _access = Promise.promisify(access);
+
 
 export class FileRepo implements deferred_repository<string> {
 
     constructor(public config:file_repo_config){
 
-        if(!fs.existsSync(config.directory)){
+        if(!existsSync(config.directory)){
             throw new Error('no such directory: ' +config.directory);
         }
 
@@ -26,93 +42,68 @@ export class FileRepo implements deferred_repository<string> {
     // ------------------------------
     // CRUD
     // ------------------------------
-    create(options:package_loc,pkg:string):Promise<boolean>{
+    create(options:resource_data<string>):Promise<boolean>{
 
-//--         console.log('**************************** received :  '+pkg)
-//--         console.log('**************************** at :  ',options)
-        // the output promise
+        var loc
+        try{ loc = validate_options(options);
+        }catch(e){ return Promise.reject(e) }
 
-        const dir_name:string = path.join(this.config.directory,options.name);
+        const dir_name:string = this.get_path(loc);
+        //console.log(existsSync(this.config.directory)?"it's all good":"adfofhlajhfkhalf;")
 
-        return new Promise((resolve,reject) => {
 
-            if(!options.version)
-                throw new Error("Version parameter is required to create a package");
 
-            // CREATE THE DIRECTORY IF IT DOES NOT ALREADY EXIST
-            resolve( mkdir(dir_name))
+        return this.latest_version(loc.name)
+                .catch(err => undefined)
+                .then( (latest_version:string) => {
 
-        })
-        .catch((err) => {
-            if(err && err.code !== 'EEXIST') {
-                err.message = 
-                    `Failed to create directory local directory '${dir_name}' with error message: ${err.message}`;
-                throw err;
-            }else{
-                return true;
-            }
-        })
-        .then( () => this.latest_version(options.name) )
-        .then( (latest_version:string) => {
+                    //console.log("latest_version: ", latest_version)
+                    if(latest_version){
+                        if(options.upsert){
+                            if(latest_version && semver.gt(latest_version, loc.version)){
+                                var err = new Error(`Version (${loc.version}) preceeds the latest version (${latest_version})`)
+                                return Promise.reject(err)
+                            }
+                        }else{
+                            if(latest_version && semver.gte(latest_version, loc.version)){
+                                var err = new Error(`Version (${loc.version}) does not exceed the latest version (${latest_version})`)
+                                return Promise.reject(err)
+                            }
+                        }
+                    }
 
-            if(options.upsert){
-                if(latest_version && semver.gt(latest_version, options.version))
-                    throw new Error(`Version (${options.version}) preceeds the latest version (${latest_version})`)
-            }else{
-                if(latest_version && semver.gte(latest_version, options.version))
-                    throw new Error(`Version (${options.version}) does not exceed the latest_version (${latest_version})`)
-            }
+                    return _mkdirp(dir_name).catch((err) => {
+                                    if(err && err.code !== 'EEXIST') {
+                                        err.message = 
+                                            `Failed to create directory local directory '${dir_name}' with error message: ${err.message}`;
+                                        throw err;
+                            }})
+                }).then( (x:any) => {
 
-            const file_path:string = this.compute_file_name(options);
-            //console.log('**************************** writing :  '+pkg)
-            //console.log('**************************** to:  '+fd)
+                    //console.log('**************************** writing :  '+pkg)
+                    //console.log('**************************** to:  '+fd)
 
-//--             return  writeFile( fd, pkg, {
-//--                         flag:options.upsert?"w":"wx",
-//--                         encoding : 'utf8'
-//--                     })
-            return new Promise( (resolve,reject) => {
-                fs.writeFile(file_path, pkg, {flag:"w",encoding : 'utf8'} ,
-                             function(err){
-                                 if(err) reject(err);
-                                 else resolve(true);
-                             });
-            })
+                    if(!options.depends){
+                        return _writeFile(this.get_path(loc,"value"), 
+                                            options.value,
+                                            {flag:"w",encoding : 'utf8'}).then((x:any)=>true );
+                    }else{
+                const value_path = this.get_path(loc,"value");
+                const depends_path = this.get_path(loc,"depends");
+                //console.log("writing value: ", value_path)
+                //console.log("writing depends: ", depends_path)
+                        return Promise.all([
+                            _writeFile(value_path, options.value, {flag:"w",encoding : 'utf8'}),
+                            _writeFile(depends_path, JSON.stringify(options.depends), {flag:"w",encoding : 'utf8'}),
+                        ]).then((x:any)=>true );
+                    }
 
-        }).then(()=>true );
+                })//.catch(e => {if(e)console.log(e.message) ; throw e})
 
     }
 
-//--     // exists is like fetch() but returns a boolean, not a package
-//--     exists(options:package_loc){
-//-- 
-//--         // VALIDATE THE OPTIONS
-//--         //needed? options = this.validate_options_range(options);
-//-- 
-//--         // DOES THE PACKAGE EXIST?
-//--         if(!fs.existsSync(path.join(this.config.directory,options.name))){// is there a package container?
-//--             return false;
-//--         }
-//-- 
-//--         // ARE THERE ANY CONTENTS?
-//--         var versions:string[] = this.versions(options.name);
-//--         if(!versions.length){ 
-//--             return false;
-//--         }
-//-- 
-//--         // DOES THE SPECIFIC VERSION EXIST?
-//--         if(options.version){
-//--             var key:string = semver.maxSatisfying(versions, options.version);
-//--             return !!key;
-//--         } 
-//--         return true;
-//--     }
+    fetchOne(options:package_loc,opts?:fetch_opts):Promise<resource_data<string>>{
 
-
-
-    fetch(options:package_loc):Promise<resource_data<string>>{
-
-//--         console.log('**************************** fetching :  ',options)
         var versionPromise: Promise<string>;
         if(options.version){
             versionPromise = this.versions(options.name)
@@ -127,67 +118,155 @@ export class FileRepo implements deferred_repository<string> {
         }else{
             versionPromise =  this.latest_version(options.name)
         }
-        
-        return  versionPromise.then( (version: string) => {
-            // return the package
-            var file_path = this.compute_file_name({name:options.name,
-                                                          version:version});
-            //console.log('**************************** reading file :  '+file_path)
-            return new Promise<resource_data<string>>((resolve,reject) => {
-                fs.readFile(file_path, 
-                            {encoding : 'utf8'},
-                            (err,data:string) => {
-                        //console.log('**************************** read :  '+data)
-                        if(err) reject(err)
-                        else resolve( {
+
+        if(!!opts && opts.novalue){
+            return  versionPromise.then( (version: string) => {
+                // return the package
+                var file_path = this.get_path({name:options.name, version:version},"depends");
+                //console.log('**************************** reading file :  '+file_path)
+                return _readFile(file_path, {encoding : 'utf8'})
+                    .then((x:string) => {
+                        return {
                             name:options.name,
                             version:version,
-                            object: data,
-                        })
+                            depends: JSON.parse(x),
+                        }
                     });
-            })
-        });
+            }) 
+        }else{
+            return  versionPromise.then( (version: string) => {
+                // return the package
+                const value_path = this.get_path({name:options.name, version:version},"value");
+                const depends_path = this.get_path({name:options.name, version:version},"depends");
+                //console.log("fetching value: ", value_path)
+                //console.log("fetching depends: ", depends_path)
+                //console.log('**************************** reading file :  '+file_path)
+                return Promise.all(
+                        [
+                            _readFile(value_path, {encoding : 'utf8'})
+                                //.tap(x => console.log("hi" ,x))
+                                .catch((err) => {
+                                    if(err) {
+                                        err.message = 
+                                            `Failed to retrieve resource from '${value_path}' with error message: ${err.message}`;
+                                        throw err;
+                                    }}),
+                            _readFile(depends_path, {encoding : 'utf8'})
+                                //.tap(x => console.log("bye" ,x))
+                                .catch((err) => { 
+                                    //console.log("no dependencies");
+                                    return undefined}),
+                        ])
+
+                    .then(x => {
+                        if(x[1]){
+                        //console.log("about to parse: ",x)
+                            return {
+                                name:options.name,
+                                version:version,
+                                value: (<string>x[0]),
+                                depends: JSON.parse((<string>x[1])),
+                            }
+                        }else{
+                            return {
+                                name:options.name,
+                                version:version,
+                                value: (<string>x[0]),
+                            }
+                        }
+                    });
+            }) }
+
+    }
+
+
+    fetch(query:package_loc|package_loc[],opts?:fetch_opts):Promise<resource_data<string>[]>{
+       
+        if(Array.isArray(query)){
+
+            const names = query.map(x => x.name);
+            return this.depends(query)
+                    .then(pkgs => 
+                            Promise.all(pkgs
+                                        .filter(x => (opts && opts.dependencies) || names.indexOf(x.name) != -1)
+                                        .map(pkg => this.fetchOne(pkg,opts)))
+                    )
+
+        }else if(opts && opts.dependencies){
+            return this.depends([query])
+                    .then(pkgs => Promise.all(pkgs.map(x => this.fetchOne(x,opts))));
+        }else{
+            return this.fetchOne(query,opts).then(x => [x]);
+        }
         
     }
 
-    update(options:package_loc,data:string):Promise<boolean>{
+    update(options:resource_data<string>):Promise<boolean>{
+
 
         // VALIDATE THE OPTIONS
-        //needed? options = this.validate_options(options);
-        return this.latest_version(options.name)
+        var loc
+        try{ loc = validate_options(options);
+        }catch(e){ return Promise.reject(e) }
+        return this.latest_version(loc.name)
                 .then((latest_version:string )=>{
 
-            if(semver.neq(latest_version, options.version))
+            if(semver.neq(latest_version, loc.version))
                 throw new Error("Only the most recent version of a package may be updated");
 
             var file_path:string = 
-                    this.compute_file_name({name:options.name,
-                                            version:options.version});
+                    this.get_path({name:loc.name,
+                                            version:loc.version},"value");
 
+                    //console.log("updating value: ", file_path)
             // THE ACTUAL WORK
-            return new Promise<boolean>((resolve,reject) => {
-                fs.writeFile(file_path, data, {flag:"w",encoding : 'utf8'} ,
-                             (err) => {
-                                 if(err) reject(err);
-                                 else resolve(true);
-                             })
-            })
+            // TODO; need to write new dependencies
+            // TODO; need to get rid of old dependencies
+            return _writeFile(file_path, 
+                                options.value, 
+                                {flag:"w",encoding : 'utf8'}).then(x => true)
             
         })
 
     }
 
     del(options:package_loc):Promise<boolean>{
+        var loc
+        try{ loc = validate_options(options);
+        }catch(e){ return Promise.reject(e) }
+        return Promise.all([
+            _unlink(this.get_path(loc,"value")),
+            _unlink(this.get_path(loc,"depends")).catch(e => {/* pass */}),
+        ])
+                .then(() => true)
+                .catch(e => {
+                    throw new Error('No such pacakge or version')
+                });
+                
+    }
 
-        return new Promise<boolean>((resolve,reject) => {
-            fs.unlink(this.compute_file_name(options),
-                    function(err){
-                        if(err) 
-                            reject(new Error('No such pacakge or version'));
-                        else
-                            resolve(true);
-                    });
-        })
+    depends(x:package_loc[]):Promise<package_loc[]>;
+    depends(x:package_loc):Promise<package_loc[]>;
+    depends(x:{[key: string]:string}):Promise<package_loc[]>;
+    depends(x:package_loc|package_loc[]|{[key: string]:string}){
+
+        var bare_repo:bare_deferred_readable_repository = {
+            fetchOne: (request:package_loc,opts:fetch_opts) => this.fetchOne(request,{novalue:true}),
+            versions: (name:string) => this.versions(name)
+        }
+
+        if(Array.isArray(x)){
+            return calculate_dependencies(x,bare_repo);
+        }if(isPackageLoc(x)){
+            return calculate_dependencies([x],bare_repo);
+        }else{
+            var y:package_loc[] =  
+                Object.keys(x) 
+                        .filter(y => x.hasOwnProperty(y))
+                        .map(y => { return {name:y,version:x[y]} })
+            return calculate_dependencies(y,bare_repo);
+        }
+ 
     }
 
     // ------------------------------
@@ -207,12 +286,12 @@ export class FileRepo implements deferred_repository<string> {
     // return a list of available packages
     packages ():Promise<string[]>{
         var self = this;
-        return readDir(this.config.directory)
+        return _readDir(this.config.directory)
             .then(function(pkg_names:string[]){
                 return Promise.all( 
                         pkg_names.map(function(_name:string){
-                            return stat(path.join(self.config.directory,_name))
-                                .then(function(x:fs.Stats):(boolean|Promise<boolean>){
+                            return _stat(path.join(self.config.directory,_name))
+                                .then(function(x:Stats):(boolean|Promise<boolean>){
                                     if(!x.isDirectory())
                                         return false;
                                     return self.versions(_name)
@@ -253,7 +332,7 @@ export class FileRepo implements deferred_repository<string> {
         }else{
 
             var self = this;
-            return readDir(path.join(this.config.directory,pkg))
+            return _readDir(path.join(this.config.directory,pkg))
                 .catch((e) => {
                     if(typeof e.message === 'string' && 
                             e.message.startsWith('ENOENT: no such file or directory')){
@@ -277,12 +356,42 @@ export class FileRepo implements deferred_repository<string> {
                     return Promise.all( 
                             file_names.map(function(x){
                                 // RETURN ONLY FILES
-                                return stat(path.join(self.config.directory,pkg,x))
-                                    .then(function(x:fs.Stats){
-                                        return x.isFile();
+                                return _stat(path.join(self.config.directory,pkg,x))
+                                    .then(function(x:Stats){
+                                        return x.isDirectory();
                                     });
-                            })).then(function(mask){
-                                for(var i = pkg.length - 1; i > 0 ; i--){
+                            })).then(mask => {
+                                //TODO: check that this indexing error isn't copied elsewhere.. (i.e.`i > 0` instead of `i >= 0` )
+                    //console.log(pkg,": mask1: ",mask)
+                    //console.log(pkg,": file_names: ",file_names)
+                    //console.log(pkg,": ",self.config.directory)
+                    //console.log(pkg)
+                                for(var i = mask.length - 1; i >= 0 ; i--){
+                                    if(!mask[i])
+                                        file_names.splice(i,1);
+                                }
+                                const ext = self.config.ext ? self.config.ext : "";
+                    //console.log(pkg,": ",ext)
+                    //console.log(pkg,": ","file_names: ",file_names)
+                                return Promise.all(file_names
+                                                        .map(x => 
+
+                            _access(path.join(self.config.directory, pkg, x, "value" + ext))
+                            .then(function(x){return true;})
+                            .catch(function(err){
+                                if (err.code === 'ENOENT') {
+                                    //console.error('myfile does not exist');
+                                    return false;
+                                }
+
+                                throw err;
+                            })
+));
+
+                            }).then(mask => {
+                    //console.log(pkg,": ","mask2: ",mask)
+                    //console.log(pkg,": ","file_names: ",file_names)
+                                for(var i = mask.length - 1; i >= 0 ; i--){
                                     if(!mask[i])
                                         file_names.splice(i,1);
                                 }
@@ -327,18 +436,22 @@ export class FileRepo implements deferred_repository<string> {
             });
     }
 
-    compute_file_name(options:package_loc){
+    get_path(options:package_loc,attr?:"depends"|"value"){
         if(!options.version){
             throw new Error("Missing 'Version' attribute.");
         }
+        const ext = (attr === "depends"? 
+                        ".json" : 
+                        (this.config.ext?this.config.ext:""));
         var version:string = semver.valid(options.version);
         if(!version){
             throw new Error("Invalid version foo: " +options.version);
         }
-        return path.join(this.config.directory, 
-                         options.name, 
-                         'v' + version + 
-                         (this.config.ext?this.config.ext:""));
+
+        const dir = path.join(this.config.directory, options.name, 'v' + version);
+        if(!attr){ return dir; }
+        if(attr === "value"){ return path.join(dir, attr + ext); }
+        return path.join(dir, "depends.json");
     }
 
 }

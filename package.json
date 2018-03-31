@@ -1,6 +1,6 @@
 {
   "name": "version-repo-node",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "A set of versioned data-stores ",
   "main": "index.js",
   "scripts": {
@@ -19,29 +19,31 @@
   ],
   "author": "Jason Thorpe",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jdthorpe/version-repo-node.git"
-  },
   "devDependencies": {
+    "@types/bluebird": "^3.5.20",
+    "@types/chai": "^4.1.2",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/chai-http": "^3.0.4",
+    "@types/mkdirp": "^0.5.2",
+    "@types/mocha": "^5.0.0",
+    "@types/node": "^9.6.0",
+    "@types/semver": "^5.5.0",
+    "@types/temp": "^0.8.31",
     "body-parser": "^1.15.2",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.3.0",
     "chai-http": "^3.0.0",
-    "object-sizeof": "^1.0.10",
     "mocha": "^3.0.2",
     "multer": "^1.2.0",
-    "temp": "^0.8.3",
-    "q": "^1.4.1"
+    "object-sizeof": "^1.0.10",
+    "temp": "^0.8.3"
   },
   "dependencies": {
     "bluebird": "^3.4.7",
     "express": "^4.14.0",
     "semver": "^5.3.0",
     "superagent": ">=1.x",
-    "superagent-bluebird-promise": "^4.1.0"
-  },
-  "peerDependencies": {
-    "version-repo": "^1.0.1"
+    "superagent-bluebird-promise": "^4.1.0",
+    "version-repo": "git+https://git@github.com/jdthorpe/version-repo.git"
   }
 }

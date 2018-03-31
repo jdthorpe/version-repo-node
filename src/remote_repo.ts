@@ -9,12 +9,11 @@ import request = require('superagent-bluebird-promise');
 //-- import request = require('superagent');
 //-- var promise_plugin  = require( 'superagent-promise-plugin'); "superagent-promise-plugin": "^3.2.0"
 
-//-- import * as Q from 'q';
 import * as Promise from 'bluebird';
 import * as semver from 'semver';
 
-import { deferred_repository, remote_repo_config, package_loc, resource_data } from "version-repo/src/typings"
-import { validate_options, validate_options_range } from 'version-repo/index';
+import { deferred_repository, remote_repo_config, package_loc, resource_data, fetch_opts } from "version-repo/src/typings"
+import { validate_options, validate_options_range } from 'version-repo';
 //-- promise_plugin.Promise = require('bluebird');
 
 const trailing_slash = /\/$/;
@@ -104,15 +103,18 @@ export class RemoteRepo<T> implements deferred_repository<T> {
     // CRUD
     // ------------------------------
 
-    create(options:package_loc,pkg:T){
+    create(options:resource_data<T>){
 
         // validate the options
         return new Promise((resolve) => {
             resolve(validate_options(options))
         })
-        .then( (options:package_loc)  => {
-            return request.post( this._build_url(options))
-            .send({package:pkg})
+        .then( (loc:package_loc)  => {
+            return request.post( this._build_url(loc))
+            .send({
+                value:options.value,
+                depends:options.depends
+            })
             .then(function (response) {
                 return true;
             })
@@ -128,14 +130,14 @@ export class RemoteRepo<T> implements deferred_repository<T> {
         })
     }
 
-    update(options:package_loc,pkg:T){
+    update(options:resource_data<T>){
 
         return new Promise((resolve) => {
             resolve(validate_options(options))
         })
-        .then( (options:package_loc)  =>  {
-            return request.put( this._build_url(options))
-                .send({package:pkg})
+        .then( (loc:package_loc )  =>  {
+            return request.put( this._build_url(loc))
+                .send({value:options.value})
                 .then((response) =>  {
                     return true;
                 })
@@ -156,8 +158,8 @@ export class RemoteRepo<T> implements deferred_repository<T> {
         return new Promise((resolve) => {
             resolve(validate_options(options))
         })
-        .then( (options:package_loc)  => {
-            return request.del( this._build_url(options))
+        .then( (loc:package_loc)  => {
+            return request.del( this._build_url(loc))
                 .then((response) => {
                     return true;
                 })
@@ -166,32 +168,61 @@ export class RemoteRepo<T> implements deferred_repository<T> {
                 });
         })
     }
+    depends(x:package_loc[]):Promise<package_loc[]>;
+    depends(x:package_loc):Promise<package_loc[]>;
+    depends(x:{[key: string]:string}):Promise<package_loc[]>;
+    depends(options:package_loc|package_loc[]|{[key: string]:string}){
+        return Promise.reject("not implemented");
+    }
 
-    fetch(options:package_loc){
+    fetch(query:package_loc|package_loc[],opts?:fetch_opts):Promise<resource_data<T>[]>{
 
-        return new Promise((resolve) => {
-            resolve(validate_options_range(options))
-        })
-        .then( (options:package_loc)  => {
-            return request.get( this._build_url(options))
-            .then((response) => {
-                if(! response.body.contents){
-                    throw new Error("Request failed to return the `contents` attribute.")
-                }
-                const contents:resource_data<T>  = response.body.contents
-                if(options.name !== contents.name){
-                    throw new Error(`'response.contents.name' (${contents.name}) differes from the requested resource name (${options.name}).`)
-                }
-                if(typeof options.version === 'string' &&  
-                   !semver.satisfies(contents.version,options.version)){
-                    throw new Error(`'response.contents.version' (${contents.version}) does not match the requested version (${options.version}).`)
-                }
-                return contents;
+        return request.get( this.base_url.replace(trailing_slash,"")+"/")
+                .send({method:"fetch",args: [query,opts]})
+                .then((response) => {
+                    if(! response.body){
+                        throw new Error("No response body.")
+                    }
+                    if(! response.body.value){
+                        throw new Error("Request failed to return the `value` attribute.")
+                    }
+                    return response.body;
+                })
+                .catch((err)  => {
+                    throw new Error( `Request failed with message ${err.text}`); // the full response object
+                });
+    }
+
+
+    fetchOne(query:package_loc,opts?:fetch_opts){
+
+//--         if(1==1)
+//--             return Promise.reject("opts.novalue not implemented");
+        //return Promise.reject("not implemented");
+
+        return Promise.resolve( validate_options_range(query))
+            .then( (options:package_loc)  => {
+                return request.get( this._build_url(options))
+                        .send({method:"fetchOne",args: [options,opts]})
+                        .then((response) => {
+                            if(! response.body.contents){
+                                throw new Error("Request failed to return the `contents` attribute.")
+                            }
+                            const contents:resource_data<T>  = response.body.contents
+                            if(options.name !== contents.name){
+                                throw new Error(`'response.contents.name' (${contents.name}) differes from the requested resource name (${options.name}).`)
+                            }
+                            if(typeof options.version === 'string' &&  
+                               !semver.satisfies(contents.version,options.version)){
+                                throw new Error(`'response.contents.version' (${contents.version}) does not match the requested version (${options.version}).`)
+                            }
+                            return contents;
+                        })
+                        .catch((err)  => {
+                            console.log("fetch one error: ",err)
+                            throw new Error( `Failed to retrieve package ${options.name} with message ${err.text}`); // the full response object
+                        });
             })
-            .catch((err)  => {
-                throw new Error( `Failed to retrieve package ${options.name} with message ${err.text}`); // the full response object
-            });
-        })
 
     }
 
