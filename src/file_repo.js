@@ -120,6 +120,7 @@ var FileRepo = /** @class */ (function () {
                 //console.log('**************************** reading file :  '+file_path)
                 return Promise.all([
                     _readFile(value_path, { encoding: 'utf8' })
+                        //.tap(x => console.log("hi" ,x))
                         .catch(function (err) {
                         if (err) {
                             err.message =
@@ -128,6 +129,7 @@ var FileRepo = /** @class */ (function () {
                         }
                     }),
                     _readFile(depends_path, { encoding: 'utf8' })
+                        //.tap(x => console.log("bye" ,x))
                         .catch(function (err) {
                         //console.log("no dependencies");
                         return undefined;
