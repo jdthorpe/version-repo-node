@@ -1,8 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-//------------------------------
-// LOAD RESOURCES
-//------------------------------
 var utils_1 = require("version-repo/src/utils");
 var express = require("express");
 var semver = require("semver");
@@ -10,9 +7,6 @@ var Promise = require("bluebird");
 var multer = require('multer'), // v1.0.5
 upload = multer(), // for parsing multipart/form-data
 bodyParser = require('body-parser');
-//------------------------------
-// CONFIG
-//------------------------------
 function router(config) {
     var router = (typeof config.router === 'undefined') ?
         express.Router() :

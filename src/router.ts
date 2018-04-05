@@ -1,11 +1,5 @@
-
-//------------------------------
-// LOAD RESOURCES
-//------------------------------
 import { name_regex } from "version-repo/src/utils"
-import { repo_router_config,resource_data } from "version-repo/src/typings"
-
-
+import { repository, resource_data } from "version-repo/src/typings"
 import express = require('express');
 import semver = require('semver');
 import * as Promise from 'bluebird';
@@ -15,11 +9,12 @@ var multer = require('multer'), // v1.0.5
     upload = multer(), // for parsing multipart/form-data
     bodyParser = require('body-parser');
 
-
-
-//------------------------------
-// CONFIG
-//------------------------------
+export interface repo_router_config { 
+    repository: repository<any>;
+    router?: express.Router; 
+    query_credentials?: () => void;
+    modify_credentials?: () => void;
+}
 
 export function router(config:repo_router_config){
 
