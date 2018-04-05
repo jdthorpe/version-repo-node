@@ -104,14 +104,9 @@ var RemoteRepo = /** @class */ (function () {
                 return true;
             })
                 .catch(function (err) {
-                var msg;
-                try {
-                    msg = err.body.error;
-                }
-                catch (err) {
-                    msg = "Unknown Server Error";
-                }
-                throw new Error(msg);
+                if (err.body && err.body.error && err.body.error !== undefined)
+                    throw new Error(err.body.error); // the full response object
+                throw new Error(err); // the full response object
             });
         });
     };
@@ -127,14 +122,9 @@ var RemoteRepo = /** @class */ (function () {
                 return true;
             })
                 .catch(function (err) {
-                var msg;
-                try {
-                    msg = err.body.error;
-                }
-                catch (err) {
-                    msg = "Unknown Server Error";
-                }
-                throw new Error(msg);
+                if (err.body && err.body.error && err.body.error !== undefined)
+                    throw new Error(err.body.error); // the full response object
+                throw new Error(err); // the full response object
             });
         });
     };
@@ -149,12 +139,26 @@ var RemoteRepo = /** @class */ (function () {
                 return true;
             })
                 .catch(function (err) {
-                throw new Error("Failed to delete package " + options.name + " with message " + err.text); // the full response object
+                if (err.body && err.body.error && err.body.error !== undefined)
+                    throw new Error(err.body.error); // the full response object
+                throw new Error(err); // the full response object
             });
         });
     };
-    RemoteRepo.prototype.depends = function (options) {
-        return Promise.reject("not implemented");
+    RemoteRepo.prototype.depends = function (x) {
+        return request.get(this.base_url.replace(trailing_slash, "") + "/")
+            .send({ method: "depends", args: [x] })
+            .then(function (response) {
+            if (!response.body) {
+                throw new Error("No response body.");
+            }
+            return response.body;
+        })
+            .catch(function (err) {
+            if (err.body && err.body.error && err.body.error !== undefined)
+                throw new Error(err.body.error); // the full response object
+            throw new Error(err); // the full response object
+        });
     };
     RemoteRepo.prototype.fetch = function (query, opts) {
         return request.get(this.base_url.replace(trailing_slash, "") + "/")
@@ -163,19 +167,16 @@ var RemoteRepo = /** @class */ (function () {
             if (!response.body) {
                 throw new Error("No response body.");
             }
-            if (!response.body.value) {
-                throw new Error("Request failed to return the `value` attribute.");
-            }
+            //if(! response.body.value) throw new Error("Request failed to return the `value` attribute.")
             return response.body;
         })
             .catch(function (err) {
-            throw new Error("Request failed with message " + err.text); // the full response object
+            if (err.body && err.body.error)
+                throw new Error(err.body.error); // the full response object
+            throw err;
         });
     };
     RemoteRepo.prototype.fetchOne = function (query, opts) {
-        //--         if(1==1)
-        //--             return Promise.reject("opts.novalue not implemented");
-        //return Promise.reject("not implemented");
         var _this = this;
         return Promise.resolve(version_repo_1.validate_options_range(query))
             .then(function (options) {
@@ -196,8 +197,9 @@ var RemoteRepo = /** @class */ (function () {
                 return contents;
             })
                 .catch(function (err) {
-                console.log("fetch one error: ", err);
-                throw new Error("Failed to retrieve package " + options.name + " with message " + err.text); // the full response object
+                if (err.body && err.body.error)
+                    throw new Error(err.body.error); // the full response object
+                throw err;
             });
         });
     };
@@ -208,7 +210,9 @@ var RemoteRepo = /** @class */ (function () {
             return response.body;
         })
             .catch(function (err) {
-            throw new Error("Failed to resolve package versions for packages:  " + JSON.stringify(versions) + " with message " + err.text); // the full response object
+            if (err.body && err.body.error)
+                throw new Error(err.body.error); // the full response object
+            throw err;
         });
     };
     // ------------------------------

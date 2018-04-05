@@ -69,8 +69,6 @@ var FileRepo = /** @class */ (function () {
             else {
                 var value_path = _this.get_path(loc, "value");
                 var depends_path = _this.get_path(loc, "depends");
-                //console.log("writing value: ", value_path)
-                //console.log("writing depends: ", depends_path)
                 return Promise.all([
                     _writeFile(value_path, options.value, { flag: "w", encoding: 'utf8' }),
                     _writeFile(depends_path, JSON.stringify(options.depends), { flag: "w", encoding: 'utf8' }),
@@ -107,6 +105,16 @@ var FileRepo = /** @class */ (function () {
                         version: version,
                         depends: JSON.parse(x),
                     };
+                }).catch(function (err) {
+                    if (err.message.startsWith('ENOENT: no such file or directory')) {
+                        return {
+                            name: options.name,
+                            version: version,
+                        };
+                    }
+                    else {
+                        throw err;
+                    }
                 });
             });
         }

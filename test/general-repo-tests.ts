@@ -31,7 +31,33 @@ import * as Promise from "bluebird"
                     repo: tx});
 })();
 
+(function (){
+    const app = build_app();
+    var server = ('function' === typeof app) ? http.createServer(app) : app;
+    var remote_repo = new repo.RemoteRepo({ 'base_url':get_server_address(server), });
+    generate_tests({name: "Remote Repo (URL config)", repo: remote_repo});
+})();
 
+(function (){
+    const app = build_app();
+    var remote_repo = new repo.RemoteRepo({ 'app':app, base_url:"/my-repo" });
+    generate_tests({name: "Remote Repo (app config)", repo: remote_repo});
+})();
+
+(function (){
+    const app = build_app();
+    var server = ('function' === typeof app) ? http.createServer(app) : app;
+    var remote_repo = new repo.RemoteRepo({ 'app':server, base_url:"/my-repo"});
+    generate_tests({name: "Remote Repo (server config)", repo: remote_repo});
+})();
+
+
+
+
+
+//--------------------------------------------------
+// utility funcitons
+//--------------------------------------------------
 
 function build_app(){
 
@@ -84,28 +110,5 @@ function get_server_address(server){
     return protocol + '//' + hostname + ':' + address.port + '/my-repo';
 
 }
-
-(function (){
-    const app = build_app();
-    var server = ('function' === typeof app) ? http.createServer(app) : app;
-    var remote_repo = new repo.RemoteRepo({ 'base_url':get_server_address(server), });
-    generate_tests({name: "Remote Repo (URL config)", repo: remote_repo});
-})();
-
-(function (){
-    const app = build_app();
-    var remote_repo = new repo.RemoteRepo({ 'app':app, base_url:"/my-repo" });
-    generate_tests({name: "Remote Repo (app config)", repo: remote_repo});
-})();
-
-(function (){
-    const app = build_app();
-    var server = ('function' === typeof app) ? http.createServer(app) : app;
-    var remote_repo = new repo.RemoteRepo({ 'app':server, base_url:"/my-repo"});
-    generate_tests({name: "Remote Repo (server config)", repo: remote_repo});
-})();
-
-
-
 
 

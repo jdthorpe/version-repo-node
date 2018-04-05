@@ -91,8 +91,6 @@ export class FileRepo implements deferred_repository<string> {
                     }else{
                 const value_path = this.get_path(loc,"value");
                 const depends_path = this.get_path(loc,"depends");
-                //console.log("writing value: ", value_path)
-                //console.log("writing depends: ", depends_path)
                         return Promise.all([
                             _writeFile(value_path, options.value, {flag:"w",encoding : 'utf8'}),
                             _writeFile(depends_path, JSON.stringify(options.depends), {flag:"w",encoding : 'utf8'}),
@@ -131,6 +129,16 @@ export class FileRepo implements deferred_repository<string> {
                             name:options.name,
                             version:version,
                             depends: JSON.parse(x),
+                        }
+                    }).catch((err) => { 
+
+                        if(err.message.startsWith('ENOENT: no such file or directory')){
+                            return {
+                                    name:options.name,
+                                    version:version,
+                                }
+                        }else{
+                            throw err;
                         }
                     });
             }) 
@@ -266,10 +274,7 @@ export class FileRepo implements deferred_repository<string> {
                 
     }
 
-    depends(x:package_loc[]):Promise<package_loc[]>;
-    depends(x:package_loc):Promise<package_loc[]>;
-    depends(x:{[key: string]:string}):Promise<package_loc[]>;
-    depends(x:package_loc|package_loc[]|{[key: string]:string}){
+    depends(x:package_loc|package_loc[]|{[key: string]:string}):Promise<package_loc[]>{
 
         var bare_repo:bare_deferred_readable_repository = {
             fetchOne: (request:package_loc,opts:fetch_opts) => this.fetchOne(request,{novalue:true}),

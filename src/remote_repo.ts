@@ -119,13 +119,9 @@ export class RemoteRepo<T> implements deferred_repository<T> {
                 return true;
             })
             .catch((err) => {// the full response object
-                var msg;
-                try{
-                    msg = err.body.error;
-                }catch(err){
-                    msg = "Unknown Server Error"
-                }
-                throw new Error(msg); 
+                if(err.body && err.body.error && err.body.error !== undefined)
+                    throw new Error( err.body.error); // the full response object
+                throw new Error(err); // the full response object
             });
         })
     }
@@ -142,13 +138,9 @@ export class RemoteRepo<T> implements deferred_repository<T> {
                     return true;
                 })
                 .catch((err) =>  {
-                    var msg;
-                    try{
-                        msg = err.body.error;
-                    }catch(err){
-                        msg = "Unknown Server Error"
-                    }
-                    throw new Error(msg); 
+                    if(err.body && err.body.error && err.body.error !== undefined)
+                        throw new Error( err.body.error); // the full response object
+                    throw new Error(err); // the full response object
                 });
         })
     }
@@ -164,15 +156,28 @@ export class RemoteRepo<T> implements deferred_repository<T> {
                     return true;
                 })
                 .catch((err) =>  {
-                    throw new Error( `Failed to delete package ${options.name} with message ${err.text}`); // the full response object
+                    if(err.body && err.body.error && err.body.error !== undefined)
+                        throw new Error( err.body.error); // the full response object
+                    throw new Error(err); // the full response object
                 });
         })
     }
-    depends(x:package_loc[]):Promise<package_loc[]>;
-    depends(x:package_loc):Promise<package_loc[]>;
-    depends(x:{[key: string]:string}):Promise<package_loc[]>;
-    depends(options:package_loc|package_loc[]|{[key: string]:string}){
-        return Promise.reject("not implemented");
+
+    depends(x:package_loc|package_loc[]|{[key: string]:string}):Promise<package_loc[]>{
+
+        return request.get( this.base_url.replace(trailing_slash,"")+"/")
+                .send({method:"depends",args: [x]})
+                .then((response) => {
+                    if(! response.body){
+                        throw new Error("No response body.")
+                    }
+                    return response.body;
+                })
+                .catch((err)  => {
+                    if(err.body && err.body.error && err.body.error !== undefined)
+                        throw new Error( err.body.error); // the full response object
+                    throw new Error(err); // the full response object
+                });
     }
 
     fetch(query:package_loc|package_loc[],opts?:fetch_opts):Promise<resource_data<T>[]>{
@@ -183,23 +188,18 @@ export class RemoteRepo<T> implements deferred_repository<T> {
                     if(! response.body){
                         throw new Error("No response body.")
                     }
-                    if(! response.body.value){
-                        throw new Error("Request failed to return the `value` attribute.")
-                    }
+                    //if(! response.body.value) throw new Error("Request failed to return the `value` attribute.")
                     return response.body;
                 })
                 .catch((err)  => {
-                    throw new Error( `Request failed with message ${err.text}`); // the full response object
+                    if(err.body && err.body.error)
+                        throw new Error( err.body.error); // the full response object
+                    throw err
                 });
     }
 
 
     fetchOne(query:package_loc,opts?:fetch_opts){
-
-//--         if(1==1)
-//--             return Promise.reject("opts.novalue not implemented");
-        //return Promise.reject("not implemented");
-
         return Promise.resolve( validate_options_range(query))
             .then( (options:package_loc)  => {
                 return request.get( this._build_url(options))
@@ -219,8 +219,9 @@ export class RemoteRepo<T> implements deferred_repository<T> {
                             return contents;
                         })
                         .catch((err)  => {
-                            console.log("fetch one error: ",err)
-                            throw new Error( `Failed to retrieve package ${options.name} with message ${err.text}`); // the full response object
+                            if(err.body && err.body.error)
+                                throw new Error( err.body.error); // the full response object
+                            throw err
                         });
             })
 
@@ -234,7 +235,9 @@ export class RemoteRepo<T> implements deferred_repository<T> {
                 return response.body;
             })
             .catch((err) =>  {
-                throw new Error( `Failed to resolve package versions for packages:  ${JSON.stringify(versions)} with message ${err.text}`); // the full response object
+                if(err.body && err.body.error)
+                    throw new Error( err.body.error); // the full response object
+                throw err
             });
 
     }

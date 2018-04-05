@@ -173,6 +173,8 @@ export function router(config:repo_router_config){
             versions(req, res, next)
         }else if(req.body.method == "fetch"){
             fetch(req, res, next)
+        }else if(req.body.method == "depends"){
+            depends(req, res, next)
         }
     }
 
@@ -184,21 +186,45 @@ export function router(config:repo_router_config){
         });
     }
 
+    function depends(req, res,next) {
+
+        console.log('router depends received params: ',JSON.stringify(req.body.args));
+        console.log('router depends received body: ',req.body);
+        Promise.try(()=>{
+            return config.repository.depends.apply(config.repository,req.body.args)
+        })
+        .then( (data) => {
+            res.status(200).send(data);
+        }).catch((err) => {
+            console.log("hi world ")
+            console.log("Error (itself): ", err)
+            console.log("Error Message: ", err.message)
+
+            next(err);
+        });
+    }
+
+
     //------------------------------
     // CRUD
     //------------------------------
 
     function fetch(req, res,next) {
 
-        console.log('router fetch received params: ',req.params)
-        console.log('router fetch received body: ',req.body)
+        console.log('router fetch received params: ',JSON.stringify(req.body.args))
+        console.log('router fetch received body: ',JSON.stringify(req.body))
         Promise.try(()=>{
             return config.repository.fetch.apply(config.repository,req.body.args)
         })
         .then( (data) => {
+            console.log("HELLO WORLD ")
+            console.log("data: ", data)
             res.status(200).send(data);
         }).catch((err) => {
-            next(new Error('GET /package get failed with error message: '+err.message));
+            console.log("HELLO world ")
+            console.log("Error (itself): ", err)
+            console.log("Error Message: ", err.message)
+            next(err);
         });
     }
 
@@ -227,7 +253,7 @@ export function router(config:repo_router_config){
         var args = req.body && req.body.args ? req.body.args : [{name:req.params.name, version:req.params.versionRange}];
         console.log('router fetchOne received params: ',req.params)
         console.log('router fetchOne received body: ',req.body)
-        console.log('router fetchOne received args: ',args)
+        console.log('router fetchOne received args: ',JSON.stringify(args))
         Promise.try(()=>{
             return config.repository.fetchOne.apply(config.repository,args)
         })

@@ -5,6 +5,11 @@
         "noImplicitAny": false,
         "sourceMap": true
     },
+	"include":[
+		"test/",
+		"src/",
+		"index.ts"
+	],
     "exclude": [
         "node_modules"
     ]

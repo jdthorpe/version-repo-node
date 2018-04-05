@@ -161,6 +161,9 @@ function router(config) {
         else if (req.body.method == "fetch") {
             fetch(req, res, next);
         }
+        else if (req.body.method == "depends") {
+            depends(req, res, next);
+        }
     }
     function list_packages(req, res, next) {
         Promise.resolve(config.repository.packages()).then(function (packages) {
@@ -169,19 +172,39 @@ function router(config) {
             res.sendStatus(500);
         });
     }
-    //------------------------------
-    // CRUD
-    //------------------------------
-    function fetch(req, res, next) {
-        console.log('router fetch received params: ', req.params);
-        console.log('router fetch received body: ', req.body);
+    function depends(req, res, next) {
+        console.log('router depends received params: ', JSON.stringify(req.body.args));
+        console.log('router depends received body: ', req.body);
         Promise.try(function () {
-            return config.repository.fetch.apply(config.repository, req.body.args);
+            return config.repository.depends.apply(config.repository, req.body.args);
         })
             .then(function (data) {
             res.status(200).send(data);
         }).catch(function (err) {
-            next(new Error('GET /package get failed with error message: ' + err.message));
+            console.log("hi world ");
+            console.log("Error (itself): ", err);
+            console.log("Error Message: ", err.message);
+            next(err);
+        });
+    }
+    //------------------------------
+    // CRUD
+    //------------------------------
+    function fetch(req, res, next) {
+        console.log('router fetch received params: ', JSON.stringify(req.body.args));
+        console.log('router fetch received body: ', JSON.stringify(req.body));
+        Promise.try(function () {
+            return config.repository.fetch.apply(config.repository, req.body.args);
+        })
+            .then(function (data) {
+            console.log("HELLO WORLD ");
+            console.log("data: ", data);
+            res.status(200).send(data);
+        }).catch(function (err) {
+            console.log("HELLO world ");
+            console.log("Error (itself): ", err);
+            console.log("Error Message: ", err.message);
+            next(err);
         });
     }
     function fetchLatest(req, res, next) {
@@ -204,7 +227,7 @@ function router(config) {
         var args = req.body && req.body.args ? req.body.args : [{ name: req.params.name, version: req.params.versionRange }];
         console.log('router fetchOne received params: ', req.params);
         console.log('router fetchOne received body: ', req.body);
-        console.log('router fetchOne received args: ', args);
+        console.log('router fetchOne received args: ', JSON.stringify(args));
         Promise.try(function () {
             return config.repository.fetchOne.apply(config.repository, args);
         })
