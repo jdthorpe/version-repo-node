@@ -44,14 +44,15 @@ export class FileRepo implements deferred_repository<string> {
     // ------------------------------
     create(options:resource_data<string>):Promise<boolean>{
 
-        var loc
-        try{ loc = validate_options(options);
-        }catch(e){ return Promise.reject(e) }
+        var loc:package_loc;
+        try{ 
+            loc = validate_options(options);
+        }catch(e){ 
+            return Promise.reject(e) 
+        }
 
         const dir_name:string = this.get_path(loc);
         //console.log(existsSync(this.config.directory)?"it's all good":"adfofhlajhfkhalf;")
-
-
 
         return this.latest_version(loc.name)
                 .catch(err => undefined)
@@ -203,31 +204,51 @@ export class FileRepo implements deferred_repository<string> {
 
     update(options:resource_data<string>):Promise<boolean>{
 
+        if(this.config.update == "none"){
+            return Promise.reject( new Error("updates are disableed in this repository"));
+        }
 
-        // VALIDATE THE OPTIONS
-        var loc
-        try{ loc = validate_options(options);
-        }catch(e){ return Promise.reject(e) }
-        return this.latest_version(loc.name)
-                .then((latest_version:string )=>{
+        // VALIDATE THE NAME AND VERSION
+        var loc:package_loc;
+        try{ 
+            loc = validate_options(options);
+        }catch(e){ 
+            return Promise.reject(e) 
+        }
 
-            if(semver.neq(latest_version, loc.version))
-                throw new Error("Only the most recent version of a package may be updated");
+        // VERIFY THE VERSION IS UPDATABLE
+        var out;
+        if(this.config.update === undefined || this.config.update == "latest"){
+            out = this.latest_version(loc.name)
+                    .then((latest_version:string )=>{
+                        if(semver.neq(latest_version, loc.version))
+                            throw new Error("Only the most recent version of a package may be updated");
+                        return true;
+                    })
 
-            var file_path:string = 
-                    this.get_path({name:loc.name,
-                                            version:loc.version},"value");
+        }else{ 
+            out = Promise.resolve(true);
+        }
 
-                    //console.log("updating value: ", file_path)
+        return out.then( _ => {
+            var value_path:string = this.get_path(loc,"value"),
+                depends_path:string = this.get_path(loc,"depends");
             // THE ACTUAL WORK
-            // TODO; need to write new dependencies
-            // TODO; need to get rid of old dependencies
-            return _writeFile(file_path, 
-                                options.value, 
-                                {flag:"w",encoding : 'utf8'}).then(x => true)
-            
-        })
 
+            return Promise.all([
+                // write the value
+                _writeFile(value_path, 
+                                options.value, 
+                                {flag:"w",encoding : 'utf8'}),
+
+                // write or delete the dependencies
+                options.depends === undefined ? 
+                    _unlink(depends_path).catch(e => {/* pass */}):
+                    _writeFile(depends_path, 
+                               JSON.stringify(options.depends), 
+                               {flag:"w",encoding : 'utf8'}),
+            ]).then(x => true)
+        })
     }
 
     del(options:package_loc):Promise<boolean>{

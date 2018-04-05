@@ -137,7 +137,7 @@ export class RemoteRepo<T> implements deferred_repository<T> {
         })
         .then( (loc:package_loc )  =>  {
             return request.put( this._build_url(loc))
-                .send({value:options.value})
+                .send({value:options.value,depends:options.depends})
                 .then((response) =>  {
                     return true;
                 })

@@ -33,6 +33,7 @@
     "@types/node": "^9.6.0",
     "@types/semver": "^5.5.0",
     "@types/temp": "^0.8.31",
+    "version-repo": "file:../version-repo-mongo",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.3.0",
     "chai-http": "^3.0.0",
@@ -46,6 +47,6 @@
     "multer": "^1.3.0",
     "semver": "^5.3.0",
     "superagent-bluebird-promise": "^4.1.0",
-    "version-repo": "git+https://git@github.com/jdthorpe/version-repo.git"
+    "version-repo": "file:../version-repo"
   }
 }

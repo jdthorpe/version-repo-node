@@ -177,7 +177,10 @@ var FileRepo = /** @class */ (function () {
     };
     FileRepo.prototype.update = function (options) {
         var _this = this;
-        // VALIDATE THE OPTIONS
+        if (this.config.update == "none") {
+            return Promise.reject(new Error("updates are disableed in this repository"));
+        }
+        // VALIDATE THE NAME AND VERSION
         var loc;
         try {
             loc = version_repo_1.validate_options(options);
@@ -185,17 +188,30 @@ var FileRepo = /** @class */ (function () {
         catch (e) {
             return Promise.reject(e);
         }
-        return this.latest_version(loc.name)
-            .then(function (latest_version) {
-            if (semver.neq(latest_version, loc.version))
-                throw new Error("Only the most recent version of a package may be updated");
-            var file_path = _this.get_path({ name: loc.name,
-                version: loc.version }, "value");
-            //console.log("updating value: ", file_path)
+        // VERIFY THE VERSION IS UPDATABLE
+        var out;
+        if (this.config.update === undefined || this.config.update == "latest") {
+            out = this.latest_version(loc.name)
+                .then(function (latest_version) {
+                if (semver.neq(latest_version, loc.version))
+                    throw new Error("Only the most recent version of a package may be updated");
+                return true;
+            });
+        }
+        else {
+            out = Promise.resolve(true);
+        }
+        return out.then(function (_) {
+            var value_path = _this.get_path(loc, "value"), depends_path = _this.get_path(loc, "depends");
             // THE ACTUAL WORK
-            // TODO; need to write new dependencies
-            // TODO; need to get rid of old dependencies
-            return _writeFile(file_path, options.value, { flag: "w", encoding: 'utf8' }).then(function (x) { return true; });
+            return Promise.all([
+                // write the value
+                _writeFile(value_path, options.value, { flag: "w", encoding: 'utf8' }),
+                // write or delete the dependencies
+                options.depends === undefined ?
+                    _unlink(depends_path).catch(function (e) { }) :
+                    _writeFile(depends_path, JSON.stringify(options.depends), { flag: "w", encoding: 'utf8' }),
+            ]).then(function (x) { return true; });
         });
     };
     FileRepo.prototype.del = function (options) {

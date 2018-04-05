@@ -250,7 +250,8 @@ function router(config) {
             return config.repository.update({
                 name: req.params.name,
                 version: req.params.version,
-                value: req.body.value
+                value: req.body.value,
+                depends: req.body.depends,
             });
         }).then(function (data) {
             res.status(200).send({

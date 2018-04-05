@@ -122,7 +122,7 @@ var RemoteRepo = /** @class */ (function () {
         })
             .then(function (loc) {
             return request.put(_this._build_url(loc))
-                .send({ value: options.value })
+                .send({ value: options.value, depends: options.depends })
                 .then(function (response) {
                 return true;
             })
