@@ -62,7 +62,7 @@ const host_repo = new MemoryRepo();
 
 app.use('/my-repo', router({ repository:backend, }));
 var server = http.createServer(app);
-server.listen(0); // 
+server.listen(0);
 
 console.log( `the host_repo is now expossed on http://localhost:${server.address().port}/my-repo` );
 ```
