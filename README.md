@@ -3,13 +3,8 @@ package with a backend provided by MongoDB.
 
 See [version-repo](https://www.npmjs.com/package/version-repo) for the general version-repo API.
 
-<!-- =============================================== -->
 # Repositories Classes
-<!-- =============================================== -->
 
-<!-- 
- ===============================================
--->
 ## RemoteRepo
 
 An asynchronous repository which forwards all requests to another
@@ -30,11 +25,6 @@ another repository with an HTTP interface).
 ```javascript
 var my_file_based_repo = new FileRepo({ dir: "/some/place/nice", ext: "txt" })
 ```
-
-
-<!-- 
- ===============================================
--->
 
 ## Router
 
@@ -66,10 +56,6 @@ server.listen(0);
 
 console.log( `the host_repo is now expossed on http://localhost:${server.address().port}/my-repo` );
 ```
-
-<!-- 
- ===============================================
--->
 
 ## RemoteRepo
 
