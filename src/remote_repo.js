@@ -5,7 +5,7 @@ var http = require("http");
 var https = require('https');
 var url = require("url");
 var request = require("superagent-bluebird-promise");
-//-- import request = require('superagent');
+//-- import * as request from 'superagent';
 //-- var promise_plugin  = require( 'superagent-promise-plugin'); "superagent-promise-plugin": "^3.2.0"
 var Promise = require("bluebird");
 var semver = require("semver");
