@@ -10,9 +10,9 @@ import {
 
 import {calculate_dependencies, isPackageLoc, validate_options} from "version-repo"
 import { mkdir, writeFile, readFile, readdir, stat, PathLike, access, existsSync, unlink, Stats} from "fs"
-import path = require('path');
-import semver = require('semver');
-import mkdirp = require('mkdirp');
+import * as path from 'path';
+import * as semver from 'semver';
+import * as mkdirp from 'mkdirp';
 import * as Promise from "bluebird";
 
 

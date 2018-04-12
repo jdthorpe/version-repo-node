@@ -1,12 +1,12 @@
 
 //-- const is_node:boolean = (typeof module !== 'undefined') && (module.exports);
 
-import http = require('http');
+import * as http from 'http';
 var https = require('https');
-import url = require('url');
+import * as url from 'url';
 
-import request = require('superagent-bluebird-promise');
-//-- import request = require('superagent');
+import * as request from 'superagent-bluebird-promise';
+//-- import * as request from 'superagent';
 //-- var promise_plugin  = require( 'superagent-promise-plugin'); "superagent-promise-plugin": "^3.2.0"
 
 import * as Promise from 'bluebird';

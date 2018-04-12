@@ -1,7 +1,7 @@
 import { name_regex } from "version-repo/src/utils"
 import { repository, resource_data } from "version-repo/src/typings"
-import express = require('express');
-import semver = require('semver');
+import * as express from 'express';
+import * as semver from 'semver';
 import * as Promise from 'bluebird';
 import { calculate_dependencies } from 'version-repo/index';
 
