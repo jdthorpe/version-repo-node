@@ -5,6 +5,7 @@ typings/*
 bower_components/*
 
 *.ts
+!*.d.ts
 *.map
 *~
 
