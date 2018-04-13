@@ -1,6 +1,6 @@
 {
   "name": "version-repo-node",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A set of versioned data-stores ",
   "main": "index.js",
   "scripts": {
