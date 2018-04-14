@@ -1,5 +1,5 @@
 // TODO
-import request = require('superagent-bluebird-promise');
+//import request = require('superagent-bluebird-promise');
 import chai = require('chai');
 import chaiHttp = require('chai-http');
 var chaiAsPromised = require("chai-as-promised"),

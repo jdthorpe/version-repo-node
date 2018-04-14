@@ -16,7 +16,7 @@ export interface repo_router_config {
     modify_credentials?: () => void;
 }
 
-export function router(config:repo_router_config){
+export function router(config:repo_router_config):express.Router{
 
     var router = (typeof config.router === 'undefined')? 
                     express.Router():

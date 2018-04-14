@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+// TODO
+//import request = require('superagent-bluebird-promise');
 var chai = require("chai");
 var chaiHttp = require("chai-http");
 var chaiAsPromised = require("chai-as-promised"), should = chai.should(), expect = chai.expect;
