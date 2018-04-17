@@ -7,9 +7,12 @@ import {
     resource_data,
     bare_deferred_readable_repository} from "version-repo/src/typings"
 
-
-import {calculate_dependencies, isPackageLoc, validate_options} from "version-repo"
-import { mkdir, writeFile, readFile, readdir, stat, PathLike, access, existsSync, unlink, Stats} from "fs"
+import { calculate_dependencies, 
+    is_package_loc, 
+    ajv_is_depends_object, 
+    validate_options, 
+    is_depends_object } from "version-repo"
+import { mkdir, writeFile, readFile, readdir, stat, PathLike, access, existsSync, mkdirSync, unlink, Stats} from "fs"
 import * as path from 'path';
 import * as semver from 'semver';
 import * as mkdirp from 'mkdirp';
@@ -34,7 +37,11 @@ export class FileRepo implements deferred_repository<string> {
     constructor(public config:file_repo_config){
 
         if(!existsSync(config.directory)){
-            throw new Error('no such directory: ' +config.directory);
+            if(config.force){
+                mkdirSync(config.directory);
+            }else{
+                throw new Error('no such directory: ' +config.directory);
+            }
         }
 
     }
@@ -50,6 +57,8 @@ export class FileRepo implements deferred_repository<string> {
         }catch(e){ 
             return Promise.reject(e) 
         }
+        if(options.depends && !is_depends_object(options.depends))
+            throw Error(`options.depends is not a valid depency object (${ JSON.stringify(options.depends) }) . Check that names are valid and values are semver strings`)
 
         const dir_name:string = this.get_path(loc);
         //console.log(existsSync(this.config.directory)?"it's all good":"adfofhlajhfkhalf;")
@@ -105,22 +114,26 @@ export class FileRepo implements deferred_repository<string> {
 
         var versionPromise: Promise<string>;
         if(options.version){
+            //console.log("VALIDING VERSION PARAMETER")
             versionPromise = this.versions(options.name)
                 .then((versions:string[]) => {
                     //console.log('versions: '+JSON.stringify(versions))
                     var version =  semver.maxSatisfying(versions,options.version);
                     if(!version){
-                        throw new Error("No such version: " +options.version);
+                        throw new Error(`No such version: "${ options.version }". Valid versions include: ${ JSON.stringify(versions) }`);
                     }
+            //console.log("version:",version)
                     return version;
                 })
         }else{
-            versionPromise =  this.latest_version(options.name)
+            //console.log("FETCHING LATEST_VERSION")
+            versionPromise =  this.latest_version(options.name)//.tap(x => console.log("LATEST VERSION: ", x))
         }
 
         if(!!opts && opts.novalue){
             return  versionPromise.then( (version: string) => {
                 // return the package
+                //console.log("var file_path = this.get_path")
                 var file_path = this.get_path({name:options.name, version:version},"depends");
                 //console.log('**************************** reading file :  '+file_path)
                 return _readFile(file_path, {encoding : 'utf8'})
@@ -145,7 +158,9 @@ export class FileRepo implements deferred_repository<string> {
         }else{
             return  versionPromise.then( (version: string) => {
                 // return the package
+                //console.log("const value_path = this.get_path")
                 const value_path = this.get_path({name:options.name, version:version},"value");
+                //console.log("const depends_path = this.get_path")
                 const depends_path = this.get_path({name:options.name, version:version},"depends");
                 //console.log("fetching value: ", value_path)
                 //console.log("fetching depends: ", depends_path)
@@ -283,9 +298,11 @@ export class FileRepo implements deferred_repository<string> {
 
         if(Array.isArray(x)){
             return calculate_dependencies(x,bare_repo);
-        }if(isPackageLoc(x)){
+        }if(is_package_loc(x)){
             return calculate_dependencies([x],bare_repo);
         }else{
+            if(!ajv_is_depends_object(x))
+                throw Error(`Expected an object with valid names and semver strings but got error ${ ajv_is_depends_object.errors }`)
             var y:package_loc[] =  
                 Object.keys(x) 
                         .filter(y => x.hasOwnProperty(y))
@@ -362,23 +379,25 @@ export class FileRepo implements deferred_repository<string> {
                 .catch((e) => {
                     if(typeof e.message === 'string' && 
                             e.message.startsWith('ENOENT: no such file or directory')){
-                        throw new Error("No such resource: " + pkg);
+                        throw new Error("No such resource: " + pkg + "at path: " + path.join(this.config.directory,pkg));
                     }else {
                         throw e;
                     }
                 })
                 .then(function(file_names:string[]){
+//console.log("file_names: ",file_names)
                     file_names = file_names.filter(function(x){
-                        if(self.config.ext){
-                            var split = Math.max(0,x.length - self.config.ext.length),
-                                version_part = x.slice(0,split),
-                                suffix_part = x.slice(split,x.length);
-                            return suffix_part === self.config.ext && // x.endsWith(self.config.ext) && 
-                                semver.valid(version_part)
-                        }else{
+//--                         if(self.config.ext){
+//--                             var split = Math.max(0,x.length - self.config.ext.length),
+//--                                 version_part = x.slice(0,split),
+//--                                 suffix_part = x.slice(split,x.length);
+//--                             return suffix_part === self.config.ext && // x.endsWith(self.config.ext) && 
+//--                                 semver.valid(version_part)
+//--                         }else{
                             return semver.valid(x)
-                        }
+//--                         }
                     })
+//console.log("file_names2 : ",file_names)
                     return Promise.all( 
                             file_names.map(function(x){
                                 // RETURN ONLY FILES
@@ -423,11 +442,11 @@ export class FileRepo implements deferred_repository<string> {
                                 }
                                 return file_names.map(function(x){
 
-                                    if(self.config.ext){
-                                        return semver.clean(x.slice(0,x.length - self.config.ext.length)) ;
-                                    }else{
+//--                                     if(self.config.ext){
+//--                                         return semver.clean(x.slice(0,x.length - self.config.ext.length)) ;
+//--                                     }else{
                                         return semver.clean(x)
-                                    }
+//--                                     }
 
                                 });
                             });
@@ -463,6 +482,7 @@ export class FileRepo implements deferred_repository<string> {
     }
 
     get_path(options:package_loc,attr?:"depends"|"value"){
+        //console.log("calling get_path (" + JSON.stringify(options) + ", " + attr + ")")
         if(!options.version){
             throw new Error("Missing 'Version' attribute.");
         }

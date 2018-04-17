@@ -86,7 +86,7 @@ export function router(config:repo_router_config):express.Router{
     if(config.query_credentials){router.get('/:name/latest_version',config.query_credentials);}
     router.get('/:name/latest_version',latest_version);
 
-    router.get('/:name/versions',notify("get_package: '/:name/'"));
+    router.get('/:name/versions',notify("get_package: '/:name/versions'"));
     if(config.query_credentials){router.get('/:name/versions',config.query_credentials);}
     router.get('/:name/versions',package_versions);
 
@@ -148,7 +148,10 @@ export function router(config:repo_router_config):express.Router{
     function package_versions (req, res, next){
         Promise.resolve(config.repository.versions(req.params.name))
             .then(versions =>  (res.status(200).send(versions)))
-            .catch(err => res.sendStatus(500))
+            .catch(err => {
+                console.error("package_versions Error:\n", err.stack);
+                res.sendStatus(500)
+            })
     }
 
     function versions (req, res, next){
@@ -160,8 +163,8 @@ export function router(config:repo_router_config):express.Router{
     }
 
     function handle_root(req, res, next){
-        console.log('router root received params: ',req.params)
-        console.log('router root received body: ',req.body)
+        //console.log('router root received params: ',req.params)
+        //console.log('router root received body: ',req.body)
         if(!req.body || !req.body.method){
             list_packages (req, res, next)
         }else if(req.body.method == "versions"){
@@ -183,15 +186,15 @@ export function router(config:repo_router_config):express.Router{
 
     function depends(req, res,next) {
 
-        console.log('router depends received params: ',JSON.stringify(req.body.args));
-        console.log('router depends received body: ',req.body);
+        //console.log('router depends received params: ',JSON.stringify(req.body.args));
+        //console.log('router depends received body: ',req.body);
         Promise.try(()=>{
             return config.repository.depends.apply(config.repository,req.body.args)
         })
         .then( (data) => {
             res.status(200).send(data);
         }).catch((err) => {
-            console.log("hi world ")
+            //console.log("hi world ")
             console.log("Error (itself): ", err)
             console.log("Error Message: ", err.message)
 
@@ -206,19 +209,19 @@ export function router(config:repo_router_config):express.Router{
 
     function fetch(req, res,next) {
 
-        console.log('router fetch received params: ',JSON.stringify(req.body.args))
-        console.log('router fetch received body: ',JSON.stringify(req.body))
+        //console.log('router fetch received params: ',JSON.stringify(req.body.args))
+        //console.log('router fetch received body: ',JSON.stringify(req.body))
         Promise.try(()=>{
             return config.repository.fetch.apply(config.repository,req.body.args)
         })
         .then( (data) => {
-            console.log("HELLO WORLD ")
-            console.log("data: ", data)
+            //console.log("HELLO WORLD ")
+            //console.log("data: ", data)
             res.status(200).send(data);
         }).catch((err) => {
-            console.log("HELLO world ")
-            console.log("Error (itself): ", err)
-            console.log("Error Message: ", err.message)
+            //console.log("HELLO world ")
+            //console.log("Error (itself): ", err)
+            //console.log("Error Message: ", err.message)
             next(err);
         });
     }
@@ -226,8 +229,8 @@ export function router(config:repo_router_config):express.Router{
 
     function fetchLatest(req, res,next) {
 
-        console.log('router fetchLatest received params: ',req.params)
-        console.log('router fetchLatest received body: ',req.body)
+        //console.log('router fetchLatest received params: ',req.params)
+        //console.log('router fetchLatest received body: ',req.body)
         Promise.try(()=>{
             return config.repository.fetchOne.apply(config.repository,req.body.args)
         })
@@ -246,9 +249,9 @@ export function router(config:repo_router_config):express.Router{
     function fetchOne(req, res,next) {
 
         var args = req.body && req.body.args ? req.body.args : [{name:req.params.name, version:req.params.versionRange}];
-        console.log('router fetchOne received params: ',req.params)
-        console.log('router fetchOne received body: ',req.body)
-        console.log('router fetchOne received args: ',JSON.stringify(args))
+        //console.log('router fetchOne received params: ',req.params)
+        //console.log('router fetchOne received body: ',req.body)
+        //console.log('router fetchOne received args: ',JSON.stringify(args))
         Promise.try(()=>{
             return config.repository.fetchOne.apply(config.repository,args)
         })
@@ -264,8 +267,8 @@ export function router(config:repo_router_config):express.Router{
     }
 
     function create (req, res, next) {
-        console.log('router create received body: ',req.body)
-        console.log('router create received body.value: ',req.body.value)
+        //console.log('router create received body: ',req.body)
+        //console.log('router create received body.value: ',req.body.value)
         if (!req.body || Object.keys(req.body).indexOf("value") == -1) {
             res.sendStatus(500).send("Request body missing field 'value'");
         }

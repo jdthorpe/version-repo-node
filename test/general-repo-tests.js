@@ -18,6 +18,10 @@ var repo = require("../index");
 })();
 (function () {
     var dir = temp.mkdirSync();
+    general_repo_test_fixture_1.generate_tests({ name: "File Repo (with file extension", repo: new repo.FileRepo({ directory: dir, ext: ".hi" }) });
+})();
+(function () {
+    var dir = temp.mkdirSync();
     var fr = new repo.FileRepo({ directory: dir });
     var tx = new repo.dTransform(fr, JSON.stringify, JSON.parse);
     general_repo_test_fixture_1.generate_tests({ name: "File Repo with a transformer",

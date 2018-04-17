@@ -66,7 +66,7 @@ function router(config) {
         router.get('/:name/latest_version', config.query_credentials);
     }
     router.get('/:name/latest_version', latest_version);
-    router.get('/:name/versions', notify("get_package: '/:name/'"));
+    router.get('/:name/versions', notify("get_package: '/:name/versions'"));
     if (config.query_credentials) {
         router.get('/:name/versions', config.query_credentials);
     }
@@ -134,7 +134,10 @@ function router(config) {
     function package_versions(req, res, next) {
         Promise.resolve(config.repository.versions(req.params.name))
             .then(function (versions) { return (res.status(200).send(versions)); })
-            .catch(function (err) { return res.sendStatus(500); });
+            .catch(function (err) {
+            console.error("package_versions Error:\n", err.stack);
+            res.sendStatus(500);
+        });
     }
     function versions(req, res, next) {
         Promise.resolve(config.repository.versions()).then(function (versions) {
@@ -144,8 +147,8 @@ function router(config) {
         });
     }
     function handle_root(req, res, next) {
-        console.log('router root received params: ', req.params);
-        console.log('router root received body: ', req.body);
+        //console.log('router root received params: ',req.params)
+        //console.log('router root received body: ',req.body)
         if (!req.body || !req.body.method) {
             list_packages(req, res, next);
         }
@@ -167,15 +170,15 @@ function router(config) {
         });
     }
     function depends(req, res, next) {
-        console.log('router depends received params: ', JSON.stringify(req.body.args));
-        console.log('router depends received body: ', req.body);
+        //console.log('router depends received params: ',JSON.stringify(req.body.args));
+        //console.log('router depends received body: ',req.body);
         Promise.try(function () {
             return config.repository.depends.apply(config.repository, req.body.args);
         })
             .then(function (data) {
             res.status(200).send(data);
         }).catch(function (err) {
-            console.log("hi world ");
+            //console.log("hi world ")
             console.log("Error (itself): ", err);
             console.log("Error Message: ", err.message);
             next(err);
@@ -185,25 +188,25 @@ function router(config) {
     // CRUD
     //------------------------------
     function fetch(req, res, next) {
-        console.log('router fetch received params: ', JSON.stringify(req.body.args));
-        console.log('router fetch received body: ', JSON.stringify(req.body));
+        //console.log('router fetch received params: ',JSON.stringify(req.body.args))
+        //console.log('router fetch received body: ',JSON.stringify(req.body))
         Promise.try(function () {
             return config.repository.fetch.apply(config.repository, req.body.args);
         })
             .then(function (data) {
-            console.log("HELLO WORLD ");
-            console.log("data: ", data);
+            //console.log("HELLO WORLD ")
+            //console.log("data: ", data)
             res.status(200).send(data);
         }).catch(function (err) {
-            console.log("HELLO world ");
-            console.log("Error (itself): ", err);
-            console.log("Error Message: ", err.message);
+            //console.log("HELLO world ")
+            //console.log("Error (itself): ", err)
+            //console.log("Error Message: ", err.message)
             next(err);
         });
     }
     function fetchLatest(req, res, next) {
-        console.log('router fetchLatest received params: ', req.params);
-        console.log('router fetchLatest received body: ', req.body);
+        //console.log('router fetchLatest received params: ',req.params)
+        //console.log('router fetchLatest received body: ',req.body)
         Promise.try(function () {
             return config.repository.fetchOne.apply(config.repository, req.body.args);
         })
@@ -219,9 +222,9 @@ function router(config) {
     }
     function fetchOne(req, res, next) {
         var args = req.body && req.body.args ? req.body.args : [{ name: req.params.name, version: req.params.versionRange }];
-        console.log('router fetchOne received params: ', req.params);
-        console.log('router fetchOne received body: ', req.body);
-        console.log('router fetchOne received args: ', JSON.stringify(args));
+        //console.log('router fetchOne received params: ',req.params)
+        //console.log('router fetchOne received body: ',req.body)
+        //console.log('router fetchOne received args: ',JSON.stringify(args))
         Promise.try(function () {
             return config.repository.fetchOne.apply(config.repository, args);
         })
@@ -236,8 +239,8 @@ function router(config) {
         });
     }
     function create(req, res, next) {
-        console.log('router create received body: ', req.body);
-        console.log('router create received body.value: ', req.body.value);
+        //console.log('router create received body: ',req.body)
+        //console.log('router create received body.value: ',req.body.value)
         if (!req.body || Object.keys(req.body).indexOf("value") == -1) {
             res.sendStatus(500).send("Request body missing field 'value'");
         }

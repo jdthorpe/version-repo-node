@@ -101,6 +101,14 @@ version_resolution_test_fixture_1.generate_version_resolution_tests({
         repo: new version_repo_1.ReadonlyBuffer(new version_repo_1.dTransform(_backend, (function (x) { return x; }), (function (x) { return x; })))
     });
 })();
+(function () {
+    var _backend = new version_repo_1.MemoryRepo();
+    version_resolution_test_fixture_1.generate_version_resolution_tests({
+        name: "Memory Repo with trivial async-transform and ProcessedBuffer",
+        backend: _backend,
+        repo: new version_repo_1.ProcessedBuffer(new version_repo_1.dTransform(_backend, (function (x) { return x; }), (function (x) { return x; })), (function (x) { return x; }))
+    });
+})();
 //--------------------------------------------------
 // utility funcitons
 //--------------------------------------------------

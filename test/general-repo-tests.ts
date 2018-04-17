@@ -25,6 +25,12 @@ import * as Promise from "bluebird"
 
 (function (){
     var dir = temp.mkdirSync();
+    generate_tests({name: "File Repo (with file extension", repo: new repo.FileRepo({directory:dir,ext:".hi"})});
+})();
+
+
+(function (){
+    var dir = temp.mkdirSync();
     const fr = new repo.FileRepo({directory:dir})
     const tx:repo.dTransform<string,any> = new repo.dTransform(fr, JSON.stringify, JSON.parse)
     generate_tests({name: "File Repo with a transformer", 

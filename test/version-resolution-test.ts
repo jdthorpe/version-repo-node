@@ -11,7 +11,7 @@ var expect = chai.expect;
 // REPO SPECIFIC IMPORTS
 import http = require('http');
 import https = require('https');
-import { MemoryRepo, dTransform, sTransform, ReadonlyBuffer } from "version-repo"
+import { MemoryRepo, dTransform, sTransform, ReadonlyBuffer, ProcessedBuffer } from "version-repo"
 import { FileRepo, router, RemoteRepo }  from "../index"
 var temp = require('temp').track();
 
@@ -124,6 +124,19 @@ generate_version_resolution_tests({
     });
 
 })();
+
+(function(){
+
+    const _backend = new MemoryRepo();
+
+    generate_version_resolution_tests({
+        name: "Memory Repo with trivial async-transform and ProcessedBuffer", 
+        backend: _backend,
+        repo: new ProcessedBuffer(new dTransform(_backend, (x => x), (x => x)), (x => x))
+    });
+
+})();
+
 
 
 

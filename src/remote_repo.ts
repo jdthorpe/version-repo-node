@@ -11,9 +11,16 @@ import * as url from 'url';
 import * as Promise from 'bluebird';
 import * as semver from 'semver';
 
-import { deferred_repository, remote_repo_config, package_loc, resource_data, fetch_opts } from "version-repo/src/typings"
-import { validate_options, validate_options_range, RemoteRepo as _RemoteRepo, dTransform } from 'version-repo';
-//-- promise_plugin.Promise = require('bluebird');
+import { 
+    deferred_repository,
+    remote_repo_config,
+    package_loc,
+    resource_data,
+    fetch_opts } from "version-repo/src/typings"
+import { validate_options,
+    validate_options_range,
+    RemoteRepo as _RemoteRepo,
+    dTransform } from 'version-repo';
 
 export interface node_remote_repo_config  extends remote_repo_config{ 
     app?:any,
