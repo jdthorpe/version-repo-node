@@ -10,7 +10,6 @@ var _mkdirp = Promise.promisify(mkdirp);
 var _readFile = Promise.promisify(fs_1.readFile);
 var _writeFile = Promise.promisify(fs_1.writeFile);
 var _unlink = Promise.promisify(fs_1.unlink);
-var _mkdir = Promise.promisify(fs_1.mkdir);
 var _readDir = Promise.promisify(fs_1.readdir);
 var _stat = Promise.promisify(fs_1.stat);
 var _access = Promise.promisify(fs_1.access);
@@ -22,7 +21,7 @@ var FileRepo = /** @class */ (function () {
                 fs_1.mkdirSync(config.directory);
             }
             else {
-                throw new Error('no such directory: ' + config.directory);
+                throw new Error("no such directory: " + config.directory);
             }
         }
     }
@@ -48,37 +47,42 @@ var FileRepo = /** @class */ (function () {
             //console.log("latest_version: ", latest_version)
             if (latest_version) {
                 if (options.upsert) {
-                    if (latest_version && semver.gt(latest_version, loc.version)) {
+                    if (latest_version &&
+                        semver.gt(latest_version, loc.version)) {
                         var err = new Error("Version (" + loc.version + ") preceeds the latest version (" + latest_version + ")");
                         return Promise.reject(err);
                     }
                 }
                 else {
-                    if (latest_version && semver.gte(latest_version, loc.version)) {
+                    if (latest_version &&
+                        semver.gte(latest_version, loc.version)) {
                         var err = new Error("Version (" + loc.version + ") does not exceed the latest version (" + latest_version + ")");
                         return Promise.reject(err);
                     }
                 }
             }
             return _mkdirp(dir_name).catch(function (err) {
-                if (err && err.code !== 'EEXIST') {
-                    err.message =
-                        "Failed to create directory local directory '" + dir_name + "' with error message: " + err.message;
+                if (err && err.code !== "EEXIST") {
+                    err.message = "Failed to create directory local directory '" + dir_name + "' with error message: " + err.message;
                     throw err;
                 }
             });
-        }).then(function (x) {
+        })
+            .then(function (x) {
             //console.log('**************************** writing :  '+pkg)
             //console.log('**************************** to:  '+fd)
             if (!options.depends) {
-                return _writeFile(_this.get_path(loc, "value"), options.value, { flag: "w", encoding: 'utf8' }).then(function (x) { return true; });
+                return _writeFile(_this.get_path(loc, "value"), options.value, { flag: "w", encoding: "utf8" }).then(function (x) { return true; });
             }
             else {
                 var value_path = _this.get_path(loc, "value");
                 var depends_path = _this.get_path(loc, "depends");
                 return Promise.all([
-                    _writeFile(value_path, options.value, { flag: "w", encoding: 'utf8' }),
-                    _writeFile(depends_path, JSON.stringify(options.depends), { flag: "w", encoding: 'utf8' }),
+                    _writeFile(value_path, options.value, {
+                        flag: "w",
+                        encoding: "utf8",
+                    }),
+                    _writeFile(depends_path, JSON.stringify(options.depends), { flag: "w", encoding: "utf8" }),
                 ]).then(function (x) { return true; });
             }
         }); //.catch(e => {if(e)console.log(e.message) ; throw e})
@@ -88,8 +92,7 @@ var FileRepo = /** @class */ (function () {
         var versionPromise;
         if (options.version) {
             //console.log("VALIDING VERSION PARAMETER")
-            versionPromise = this.versions(options.name)
-                .then(function (versions) {
+            versionPromise = this.versions(options.name).then(function (versions) {
                 //console.log('versions: '+JSON.stringify(versions))
                 var version = semver.maxSatisfying(versions, options.version);
                 if (!version) {
@@ -109,15 +112,16 @@ var FileRepo = /** @class */ (function () {
                 //console.log("var file_path = this.get_path")
                 var file_path = _this.get_path({ name: options.name, version: version }, "depends");
                 //console.log('**************************** reading file :  '+file_path)
-                return _readFile(file_path, { encoding: 'utf8' })
+                return _readFile(file_path, "utf8") // {encoding : 'utf8'}
                     .then(function (x) {
                     return {
                         name: options.name,
                         version: version,
                         depends: JSON.parse(x),
                     };
-                }).catch(function (err) {
-                    if (err.message.startsWith('ENOENT: no such file or directory')) {
+                })
+                    .catch(function (err) {
+                    if (err.message.startsWith("ENOENT: no such file or directory")) {
                         return {
                             name: options.name,
                             version: version,
@@ -140,25 +144,23 @@ var FileRepo = /** @class */ (function () {
                 //console.log("fetching depends: ", depends_path)
                 //console.log('**************************** reading file :  '+file_path)
                 return Promise.all([
-                    _readFile(value_path, { encoding: 'utf8' })
+                    _readFile(value_path, "utf8") // {encoding : 'utf8'}
                         //.tap(x => console.log("hi" ,x))
                         .catch(function (err) {
                         if (err) {
-                            err.message =
-                                "Failed to retrieve resource from '" + value_path + "' with error message: " + err.message;
+                            err.message = "Failed to retrieve resource from '" + value_path + "' with error message: " + err.message;
                             throw err;
                         }
                     }),
-                    _readFile(depends_path, { encoding: 'utf8' })
+                    _readFile(depends_path, "utf8") // {encoding : 'utf8'}
                         //.tap(x => console.log("bye" ,x))
                         .catch(function (err) {
                         //console.log("no dependencies");
                         return undefined;
                     }),
-                ])
-                    .then(function (x) {
+                ]).then(function (x) {
                     if (x[1]) {
-                        //console.log("about to parse: ",x)
+                        // console.log("about to parse: ",x)
                         return {
                             name: options.name,
                             version: version,
@@ -181,16 +183,19 @@ var FileRepo = /** @class */ (function () {
         var _this = this;
         if (Array.isArray(query)) {
             var names_1 = query.map(function (x) { return x.name; });
-            return this.depends(query)
-                .then(function (pkgs) {
+            return this.depends(query).then(function (pkgs) {
                 return Promise.all(pkgs
-                    .filter(function (x) { return (opts && opts.dependencies) || names_1.indexOf(x.name) != -1; })
+                    .filter(function (x) {
+                    return (opts && opts.dependencies) ||
+                        names_1.indexOf(x.name) != -1;
+                })
                     .map(function (pkg) { return _this.fetchOne(pkg, opts); }));
             });
         }
         else if (opts && opts.dependencies) {
-            return this.depends([query])
-                .then(function (pkgs) { return Promise.all(pkgs.map(function (x) { return _this.fetchOne(x, opts); })); });
+            return this.depends([query]).then(function (pkgs) {
+                return Promise.all(pkgs.map(function (x) { return _this.fetchOne(x, opts); }));
+            });
         }
         else {
             return this.fetchOne(query, opts).then(function (x) { return [x]; });
@@ -211,9 +216,9 @@ var FileRepo = /** @class */ (function () {
         }
         // VERIFY THE VERSION IS UPDATABLE
         var out;
-        if (this.config.update === undefined || this.config.update == "latest") {
-            out = this.latest_version(loc.name)
-                .then(function (latest_version) {
+        if (this.config.update === undefined ||
+            this.config.update == "latest") {
+            out = this.latest_version(loc.name).then(function (latest_version) {
                 if (semver.neq(latest_version, loc.version))
                     throw new Error("Only the most recent version of a package may be updated");
                 return true;
@@ -227,11 +232,16 @@ var FileRepo = /** @class */ (function () {
             // THE ACTUAL WORK
             return Promise.all([
                 // write the value
-                _writeFile(value_path, options.value, { flag: "w", encoding: 'utf8' }),
+                _writeFile(value_path, options.value, {
+                    flag: "w",
+                    encoding: "utf8",
+                }),
                 // write or delete the dependencies
-                options.depends === undefined ?
-                    _unlink(depends_path).catch(function (e) { }) :
-                    _writeFile(depends_path, JSON.stringify(options.depends), { flag: "w", encoding: 'utf8' }),
+                options.depends === undefined
+                    ? _unlink(depends_path).catch(function (e) {
+                        /* pass */
+                    })
+                    : _writeFile(depends_path, JSON.stringify(options.depends), { flag: "w", encoding: "utf8" }),
             ]).then(function (x) { return true; });
         });
     };
@@ -245,18 +255,22 @@ var FileRepo = /** @class */ (function () {
         }
         return Promise.all([
             _unlink(this.get_path(loc, "value")),
-            _unlink(this.get_path(loc, "depends")).catch(function (e) { }),
+            _unlink(this.get_path(loc, "depends")).catch(function (e) {
+                /* pass */
+            }),
         ])
             .then(function () { return true; })
             .catch(function (e) {
-            throw new Error('No such pacakge or version');
+            throw new Error("No such pacakge or version");
         });
     };
     FileRepo.prototype.depends = function (x) {
         var _this = this;
         var bare_repo = {
-            fetchOne: function (request, opts) { return _this.fetchOne(request, { novalue: true }); },
-            versions: function (name) { return _this.versions(name); }
+            fetchOne: function (request, opts) {
+                return _this.fetchOne(request, { novalue: true });
+            },
+            versions: function (name) { return _this.versions(name); },
         };
         if (Array.isArray(x)) {
             return version_repo_1.calculate_dependencies(x, bare_repo);
@@ -269,7 +283,9 @@ var FileRepo = /** @class */ (function () {
                 throw Error("Expected an object with valid names and semver strings but got error " + version_repo_1.ajv_is_depends_object.errors);
             var y = Object.keys(x)
                 .filter(function (y) { return x.hasOwnProperty(y); })
-                .map(function (y) { return { name: y, version: x[y] }; });
+                .map(function (y) {
+                return { name: y, version: x[y] };
+            });
             return version_repo_1.calculate_dependencies(y, bare_repo);
         }
     };
@@ -277,25 +293,23 @@ var FileRepo = /** @class */ (function () {
     // utilities
     // ------------------------------
     FileRepo.prototype.latest_version = function (name, filter) {
-        if (typeof name !== 'string')
+        if (typeof name !== "string")
             throw new Error("Missing or invalid name parameter");
-        return this.versions(name)
-            .then(function (versions) {
-            return semver.maxSatisfying(versions, filter ? filter : '>=0.0.0');
+        return this.versions(name).then(function (versions) {
+            return semver.maxSatisfying(versions, filter ? filter : ">=0.0.0");
         });
     };
     // return a list of available packages
     FileRepo.prototype.packages = function () {
         var self = this;
-        return _readDir(this.config.directory)
-            .then(function (pkg_names) {
+        return _readDir(this.config.directory).then(function (pkg_names) {
             return Promise.all(pkg_names.map(function (_name) {
-                return _stat(path.join(self.config.directory, _name))
-                    .then(function (x) {
+                return _stat(path.join(self.config.directory, _name)).then(function (x) {
                     if (!x.isDirectory())
                         return false;
-                    return self.versions(_name)
-                        .then(function (x) { return !!x.length; });
+                    return self.versions(_name).then(function (x) {
+                        return !!x.length;
+                    });
                 });
             })).then(function (mask) {
                 for (var i = pkg_names.length; i > 0; i--) {
@@ -309,28 +323,32 @@ var FileRepo = /** @class */ (function () {
     };
     FileRepo.prototype.versions = function (pkg) {
         var _this = this;
-        if (typeof pkg === 'undefined') {
+        if (typeof pkg === "undefined") {
             var self = this;
             var out = {};
             return this.packages()
                 .then(function (names) {
                 return Promise.all(names.map(function (name) {
-                    return self.versions(name)
-                        .then(function (versions) {
+                    return self.versions(name).then(function (versions) {
                         out[name] = versions;
                         return true;
                     });
                 }));
             })
-                .then(function (x) { return out; });
+                .then(function (x) {
+                return out;
+            });
         }
         else {
             var self = this;
             return _readDir(path.join(this.config.directory, pkg))
                 .catch(function (e) {
-                if (typeof e.message === 'string' &&
-                    e.message.startsWith('ENOENT: no such file or directory')) {
-                    throw new Error("No such resource: " + pkg + "at path: " + path.join(_this.config.directory, pkg));
+                if (typeof e.message === "string" &&
+                    e.message.startsWith("ENOENT: no such file or directory")) {
+                    throw new Error("No such resource: " +
+                        pkg +
+                        " at path: " +
+                        path.join(_this.config.directory, pkg));
                 }
                 else {
                     throw e;
@@ -343,7 +361,7 @@ var FileRepo = /** @class */ (function () {
                     //--                             var split = Math.max(0,x.length - self.config.ext.length),
                     //--                                 version_part = x.slice(0,split),
                     //--                                 suffix_part = x.slice(split,x.length);
-                    //--                             return suffix_part === self.config.ext && // x.endsWith(self.config.ext) && 
+                    //--                             return suffix_part === self.config.ext && // x.endsWith(self.config.ext) &&
                     //--                                 semver.valid(version_part)
                     //--                         }else{
                     return semver.valid(x);
@@ -352,11 +370,11 @@ var FileRepo = /** @class */ (function () {
                 //console.log("file_names2 : ",file_names)
                 return Promise.all(file_names.map(function (x) {
                     // RETURN ONLY FILES
-                    return _stat(path.join(self.config.directory, pkg, x))
-                        .then(function (x) {
+                    return _stat(path.join(self.config.directory, pkg, x)).then(function (x) {
                         return x.isDirectory();
                     });
-                })).then(function (mask) {
+                }))
+                    .then(function (mask) {
                     //TODO: check that this indexing error isn't copied elsewhere.. (i.e.`i > 0` instead of `i >= 0` )
                     //console.log(pkg,": mask1: ",mask)
                     //console.log(pkg,": file_names: ",file_names)
@@ -369,19 +387,21 @@ var FileRepo = /** @class */ (function () {
                     var ext = self.config.ext ? self.config.ext : "";
                     //console.log(pkg,": ",ext)
                     //console.log(pkg,": ","file_names: ",file_names)
-                    return Promise.all(file_names
-                        .map(function (x) {
+                    return Promise.all(file_names.map(function (x) {
                         return _access(path.join(self.config.directory, pkg, x, "value" + ext))
-                            .then(function (x) { return true; })
+                            .then(function (x) {
+                            return true;
+                        })
                             .catch(function (err) {
-                            if (err.code === 'ENOENT') {
+                            if (err.code === "ENOENT") {
                                 //console.error('myfile does not exist');
                                 return false;
                             }
                             throw err;
                         });
                     }));
-                }).then(function (mask) {
+                })
+                    .then(function (mask) {
                     //console.log(pkg,": ","mask2: ",mask)
                     //console.log(pkg,": ","file_names: ",file_names)
                     for (var i = mask.length - 1; i >= 0; i--) {
@@ -402,24 +422,20 @@ var FileRepo = /** @class */ (function () {
     //------------------------------
     // REPO SPECIFIC UTILS
     //------------------------------
-    // return the file name of a given package 
+    // return the file name of a given package
     FileRepo.prototype.get_file_name = function (options) {
         var self = this;
         if (options.version) {
-            return this.versions(options.name)
-                .then(function (versions) {
+            return this.versions(options.name).then(function (versions) {
                 var version = semver.maxSatisfying(versions, options.version);
                 if (!version)
-                    throw new Error('No compatibile version');
-                return path.join(options.name, 'v' + version +
-                    (self.config.ext ? self.config.ext : ""));
+                    throw new Error("No compatibile version");
+                return path.join(options.name, "v" + version + (self.config.ext ? self.config.ext : ""));
             });
         }
         // no version provided
-        return this.latest_version(options.name)
-            .then(function (version) {
-            return path.join(options.name, 'v' + version +
-                (self.config.ext ? self.config.ext : ""));
+        return this.latest_version(options.name).then(function (version) {
+            return path.join(options.name, "v" + version + (self.config.ext ? self.config.ext : ""));
         });
     };
     FileRepo.prototype.get_path = function (options, attr) {
@@ -427,14 +443,16 @@ var FileRepo = /** @class */ (function () {
         if (!options.version) {
             throw new Error("Missing 'Version' attribute.");
         }
-        var ext = (attr === "depends" ?
-            ".json" :
-            (this.config.ext ? this.config.ext : ""));
+        var ext = attr === "depends"
+            ? ".json"
+            : this.config.ext
+                ? this.config.ext
+                : "";
         var version = semver.valid(options.version);
         if (!version) {
             throw new Error("Invalid version foo: " + options.version);
         }
-        var dir = path.join(this.config.directory, options.name, 'v' + version);
+        var dir = path.join(this.config.directory, options.name, "v" + version);
         if (!attr) {
             return dir;
         }
